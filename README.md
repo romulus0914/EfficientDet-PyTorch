@@ -13,4 +13,4 @@ Based on EfficientNet, newly introduce a weighted bi-directional feature pyramid
 ![Results](./images/efficientdet_results.png)
 
 # Disclaimer
-Backbone model EfficientNet is modified from my own implementation of [EfficientNet-PyTorch](https://github.com/romulus0914/EfficientNet-PyTorch)
+Backbone model EfficientNet is modified from my own implementation of [EfficientNet-PyTorch](https://github.com/romulus0914/EfficientNet-PyTorch). EfficientDet is based on the official implementation [google/automl/efficientdet](https://github.com/google/automl/tree/master/efficientdet) in Tensorflow.
