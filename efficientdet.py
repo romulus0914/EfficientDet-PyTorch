@@ -180,7 +180,7 @@ class BiFPN(nn.Module):
                     input_nodes_resample.append(_ResampleFeatureMap(
                         fpn_nodes_width[input_node],
                         features_num_channels[input_node] if cell_idx == 0 and input_node < 3 else fpn_num_channels,
-                        fpn_nodes_width[node_idx+5],
+                        fpn_nodes_width[node_idx+num_features],
                         fpn_num_channels
                     ))
                 fpn_layers_resample.append(input_nodes_resample)
