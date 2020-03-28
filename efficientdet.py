@@ -72,9 +72,10 @@ class ClassNet(nn.Module):
 
         fpn_num_channels = model_params['fpn_num_channels']
         box_class_repeats = model_params['box_class_repeats']
+        num_features = model_params['num_features']
 
         self.class_conv = []
-        for _ in range(5):
+        for _ in range(num_features):
             class_conv = []
             for _ in range(box_class_repeats):
                 class_conv.append(_SepconvBnReLU(fpn_num_channels, fpn_num_channels))
@@ -107,9 +108,10 @@ class BoxNet(nn.Module):
 
         fpn_num_channels = model_params['fpn_num_channels']
         box_class_repeats = model_params['box_class_repeats']
+        num_features = model_params['num_features']
 
         self.box_conv = []
-        for _ in range(5):
+        for _ in range(num_features):
             box_conv = []
             for _ in range(box_class_repeats):
                 box_conv.append(_SepconvBnReLU(fpn_num_channels, fpn_num_channels))
@@ -156,6 +158,7 @@ class BiFPN(nn.Module):
         image_size = model_params['image_size']
         fpn_num_channels = model_params['fpn_num_channels']
         fpn_cell_repeats = model_params['fpn_cell_repeats']
+        num_features = model_params['num_features']
 
         # downsample feature from backbone model to desirable width and channels
         feature_width = image_size // (2**5)
@@ -165,11 +168,12 @@ class BiFPN(nn.Module):
         # build fpn cells
         self.fpn_cells = []
         self.fpn_cells_resample = []
+
         fpn_nodes_width = [int(image_size*node_config['width_ratio']) for node_config in self.fpn_config]
         for cell_idx in range(fpn_cell_repeats):
             fpn_layers = []
             fpn_layers_resample = []
-            for node_idx, node_config in enumerate(self.fpn_config[5:]):
+            for node_idx, node_config in enumerate(self.fpn_config[num_features:]):
                 # resample input features
                 input_nodes_resample = []
                 for input_node in node_config['inputs']:
@@ -189,7 +193,7 @@ class BiFPN(nn.Module):
 
         # weight method for input nodes
         if model_params['weight_method'] == 'fastattn':
-            total_input_nodes = sum([len(node_config['inputs']) for node_config in self.fpn_config[5:]])
+            total_input_nodes = sum([len(node_config['inputs']) for node_config in self.fpn_config[num_features:]])
             self.fastattn_weights = nn.Parameter(torch.ones(fpn_cell_repeats, total_input_nodes), requires_grad=True)
 
         self.model_params = model_params
@@ -211,7 +215,7 @@ class BiFPN(nn.Module):
 
         for cell_idx, (fpn_layers, fpn_layers_resample) in enumerate(zip(self.fpn_cells, self.fpn_cells_resample)):
             weights_offset = 0
-            for node_idx, node_config in enumerate(self.fpn_config[5:]):
+            for node_idx, node_config in enumerate(self.fpn_config[self.model_params['num_features']:]):
                 num_inputs = len(node_config['inputs'])
                 feature_inputs = [resample(features[i]) for i, resample in zip(node_config['inputs'], fpn_layers_resample[node_idx])]
                 if self.model_params['weight_method'] == 'fastattn':
@@ -225,13 +229,15 @@ class BiFPN(nn.Module):
 
                 weights_offset += num_inputs
 
-            features = features[-5:]
+            features = features[-self.model_params['num_features']:]
 
         return features
 
 class EfficientDet(nn.Module):
     def __init__(self, model_params):
         super(EfficientDet, self).__init__()
+
+        model_params['num_features'] = 5
 
         # EfficientNet backbone
         self.backbone_model, features_num_channels = _BuildEfficientNet(model_params['backbone_type'])
@@ -243,9 +249,11 @@ class EfficientDet(nn.Module):
         self.class_net = ClassNet(model_params)
         self.box_net = BoxNet(model_params)
 
+        self.num_features = model_params['num_features']
+
     def forward(self, images):
         _ = self.backbone_model(images)
-        features = [self.backbone_model.layers['reduction_{}'.format(i)] for i in range(3, 6)]
+        features = [self.backbone_model.layers['reduction_{}'.format(i)] for i in range(8-self.num_features, 6)]
         features = self.fpn(features)
         class_predicts = self.class_net(features)
         box_predicts = self.box_net(features)
