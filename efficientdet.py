@@ -179,7 +179,7 @@ class BiFPN(nn.Module):
                 for input_node in node_config['inputs']:
                     input_nodes_resample.append(_ResampleFeatureMap(
                         fpn_nodes_width[input_node],
-                        features_num_channels[input_node] if cell_idx == 0 and input_node < 3 else fpn_num_channels,
+                        features_num_channels[input_node] if cell_idx == 0 and input_node < num_features - 2 else fpn_num_channels,
                         fpn_nodes_width[node_idx+num_features],
                         fpn_num_channels
                     ))
@@ -240,7 +240,7 @@ class EfficientDet(nn.Module):
         model_params['num_features'] = 5
 
         # EfficientNet backbone
-        self.backbone_model, features_num_channels = _BuildEfficientNet(model_params['backbone_type'])
+        self.backbone_model, features_num_channels = _BuildEfficientNet(model_params['backbone_type'], model_params['num_features']-2)
 
         # BiFPN
         self.fpn = BiFPN(model_params, features_num_channels)
