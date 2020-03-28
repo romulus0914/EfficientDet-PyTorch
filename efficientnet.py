@@ -240,10 +240,10 @@ class EfficientNet(nn.Module):
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.zeros_(m.bias)
 
-def _BuildEfficientNet(net_type):
+def _BuildEfficientNet(net_type, num_features):
     model = EfficientNet(efficientnet_model_params[net_type], drop_connect_rate=0, include_head=False)
 
-    return model, model.features_num_channels[-3:]
+    return model, model.features_num_channels[-num_features:]
 
 if __name__ == '__main__':
     net_type = 'efficientnet-b0'
