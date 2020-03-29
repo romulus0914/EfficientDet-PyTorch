@@ -74,13 +74,16 @@ class ClassNet(nn.Module):
         box_class_repeats = model_params['box_class_repeats']
         num_features = model_params['num_features']
 
-        self.class_conv = []
+        class_conv = []
         for _ in range(num_features):
-            class_conv = []
+            conv = []
             for _ in range(box_class_repeats):
-                class_conv.append(_SepconvBnReLU(fpn_num_channels, fpn_num_channels))
-            class_conv.append(_SepconvBnReLU(fpn_num_channels, num_classes*num_anchors))
-            self.class_conv.append(nn.Sequential(*class_conv))
+                conv.append(_SepconvBnReLU(fpn_num_channels, fpn_num_channels))
+            conv.append(_SepconvBnReLU(fpn_num_channels, num_classes*num_anchors))
+
+            class_conv.append(nn.Sequential(*conv))
+
+        self.class_conv = nn.Sequential(*class_conv)
 
         self._initialize_weights(fpn_num_channels)
 
@@ -110,13 +113,16 @@ class BoxNet(nn.Module):
         box_class_repeats = model_params['box_class_repeats']
         num_features = model_params['num_features']
 
-        self.box_conv = []
+        box_conv = []
         for _ in range(num_features):
-            box_conv = []
+            conv = []
             for _ in range(box_class_repeats):
-                box_conv.append(_SepconvBnReLU(fpn_num_channels, fpn_num_channels))
-            box_conv.append(_SepconvBnReLU(fpn_num_channels, 4*num_anchors))
-            self.box_conv.append(nn.Sequential(*box_conv))
+                conv.append(_SepconvBnReLU(fpn_num_channels, fpn_num_channels))
+            conv.append(_SepconvBnReLU(fpn_num_channels, 4*num_anchors))
+
+            box_conv.append(nn.Sequential(*conv))
+
+        self.box_conv = nn.Sequential(*box_conv)
 
         self._initialize_weights()
 
@@ -166,8 +172,8 @@ class BiFPN(nn.Module):
         self.resample7 = _ResampleFeatureMap(feature_width//2, fpn_num_channels, feature_width//4, fpn_num_channels)
 
         # build fpn cells
-        self.fpn_cells = []
-        self.fpn_cells_resample = []
+        fpn_cells = []
+        fpn_cells_resample = []
 
         fpn_nodes_width = [int(image_size*node_config['width_ratio']) for node_config in self.fpn_config]
         for cell_idx in range(fpn_cell_repeats):
@@ -183,13 +189,16 @@ class BiFPN(nn.Module):
                         fpn_nodes_width[node_idx+num_features],
                         fpn_num_channels
                     ))
-                fpn_layers_resample.append(input_nodes_resample)
+                fpn_layers_resample.append(nn.Sequential(*input_nodes_resample))
 
                 # depthwise separable convolution for feature fusion
                 fpn_layers.append(_SepconvBnReLU(fpn_num_channels, fpn_num_channels, relu_last=False))
 
-            self.fpn_cells.append(fpn_layers)
-            self.fpn_cells_resample.append(fpn_layers_resample)
+            fpn_cells.append(nn.Sequential(*fpn_layers))
+            fpn_cells_resample.append(nn.Sequential(*fpn_layers_resample))
+
+        self.fpn_cells = nn.Sequential(*fpn_cells)
+        self.fpn_cells_resample = nn.Sequential(*fpn_cells_resample)
 
         # weight method for input nodes
         if model_params['weight_method'] == 'fastattn':
