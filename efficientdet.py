@@ -29,7 +29,7 @@ class NearestUpsampling(nn.Module):
 
         return torch.reshape(x, (bs, c, h*self.scale, w*self.scale))
 
-def _BatchNorm(channels, eps=1e-4, momentum=0.997):
+def _BatchNorm(channels, eps=1e-4, momentum=0.003):
     return nn.BatchNorm2d(channels, eps=eps, momentum=momentum)
 
 def _SepconvBnReLU(in_channels, out_channels, kernel_size=3, relu_last=True):
