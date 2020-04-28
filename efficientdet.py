@@ -189,16 +189,16 @@ class BiFPN(nn.Module):
                         fpn_nodes_width[node_idx+num_features],
                         fpn_num_channels
                     ))
-                fpn_layers_resample.append(nn.Sequential(*input_nodes_resample))
+                fpn_layers_resample.append(nn.ModuleList(input_nodes_resample))
 
                 # depthwise separable convolution for feature fusion
                 fpn_layers.append(_SepconvBnReLU(fpn_num_channels, fpn_num_channels, relu_last=False))
 
-            fpn_cells.append(nn.Sequential(*fpn_layers))
-            fpn_cells_resample.append(nn.Sequential(*fpn_layers_resample))
+            fpn_cells.append(nn.ModuleList(fpn_layers))
+            fpn_cells_resample.append(nn.ModuleList(fpn_layers_resample))
 
-        self.fpn_cells = nn.Sequential(*fpn_cells)
-        self.fpn_cells_resample = nn.Sequential(*fpn_cells_resample)
+        self.fpn_cells = nn.ModuleList(fpn_cells)
+        self.fpn_cells_resample = nn.ModuleList(fpn_cells_resample)
 
         # weight method for input nodes
         if model_params['weight_method'] == 'fastattn':
